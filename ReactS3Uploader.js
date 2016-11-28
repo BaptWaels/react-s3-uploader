@@ -1,35 +1,26 @@
 "use strict";
 
 var React = require('react'),
-    ReactDOM = require('react-dom'),
     S3Upload = require('./s3upload.js'),
     objectAssign = require('object-assign');
 
 var ReactS3Uploader = React.createClass({
 
     propTypes: {
-        signingUrl: React.PropTypes.string,
-        getSignedUrl: React.PropTypes.func,
-        preprocess: React.PropTypes.func,
+        signingUrl: React.PropTypes.string.isRequired,
         onProgress: React.PropTypes.func,
         onFinish: React.PropTypes.func,
         onError: React.PropTypes.func,
         signingUrlHeaders: React.PropTypes.object,
-        signingUrlQueryParams: React.PropTypes.oneOfType([
-          React.PropTypes.object,
-          React.PropTypes.func
-        ]),
+        signingUrlQueryParams: React.PropTypes.object,
         uploadRequestHeaders: React.PropTypes.object,
         contentDisposition: React.PropTypes.string,
-        server: React.PropTypes.string
+        server: React.PropTypes.string,
+        filenamePrefix: React.PropTypes.string
     },
 
     getDefaultProps: function() {
         return {
-            preprocess: function(file, next) {
-                console.log('Pre-process: ' + file.name);
-                next(file);
-            },
             onProgress: function(percent, message) {
                 console.log('Upload progress: ' + percent + '% ' + message);
             },
@@ -45,10 +36,9 @@ var ReactS3Uploader = React.createClass({
 
     uploadFile: function() {
         new S3Upload({
-            fileElement: ReactDOM.findDOMNode(this),
+            fileElement: findDOMNode(this),
+            filenamePrefix: this.props.filenamePrefix,
             signingUrl: this.props.signingUrl,
-            getSignedUrl: this.props.getSignedUrl,
-            preprocess: this.props.preprocess,
             onProgress: this.props.onProgress,
             onFinishS3Put: this.props.onFinish,
             onError: this.props.onError,
@@ -61,29 +51,18 @@ var ReactS3Uploader = React.createClass({
     },
 
     clear: function() {
-        clearInputFile(ReactDOM.findDOMNode(this));
+        clearInputFile(findDOMNode(this));
     },
 
     render: function() {
-        return React.DOM.input(this.getInputProps());
-    },
-
-    getInputProps: function() {
-        var temporaryProps = objectAssign({}, this.props, {type: 'file', onChange: this.uploadFile});
-        var inputProps = {};
-
-        var invalidProps = Object.keys(ReactS3Uploader.propTypes);
-
-        for(var key in temporaryProps) {
-            if(temporaryProps.hasOwnProperty(key) && invalidProps.indexOf(key) === -1) {
-                inputProps[key] = temporaryProps[key];
-            }
-        }
-
-        return inputProps;
+        return React.DOM.input(objectAssign({}, this.props, {type: 'file', onChange: this.uploadFile}));
     }
 
 });
+
+function findDOMNode(cmp) {
+    return React.findDOMNode ? React.findDOMNode(cmp) : cmp.getDOMNode();
+}
 
 // http://stackoverflow.com/a/24608023/194065
 function clearInputFile(f){
